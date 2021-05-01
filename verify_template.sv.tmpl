@@ -1,0 +1,462 @@
+module verify(
+    input clk,
+    input resetn
+);
+
+reg [7:0] gpio_pin_in;
+reg [3:0] uart_rx;
+reg spi_miso;
+
+// internal details
+wire [31:0] cpu1_alu_out_q;
+wire cpu1_compressed_instr;
+wire [63:0] cpu1_count_cycle;
+wire [63:0] cpu1_count_instr;
+wire [7:0] cpu1_cpu_state;
+wire [31:0] cpu1_decoded_imm;
+wire [31:0] cpu1_decoded_imm_j;
+wire [4:0] cpu1_decoded_rd;
+wire [4:0] cpu1_decoded_rs1;
+wire [4:0] cpu1_decoded_rs2;
+wire cpu1_decoder_pseudo_trigger;
+wire cpu1_decoder_trigger;
+wire cpu1_instr_add;
+wire cpu1_instr_addi;
+wire cpu1_instr_and;
+wire cpu1_instr_andi;
+wire cpu1_instr_auipc;
+wire cpu1_instr_beq;
+wire cpu1_instr_bge;
+wire cpu1_instr_bgeu;
+wire cpu1_instr_blt;
+wire cpu1_instr_bltu;
+wire cpu1_instr_bne;
+wire cpu1_instr_getq;
+wire cpu1_instr_jal;
+wire cpu1_instr_jalr;
+wire cpu1_instr_lb;
+wire cpu1_instr_lbu;
+wire cpu1_instr_lh;
+wire cpu1_instr_lhu;
+wire cpu1_instr_lui;
+wire cpu1_instr_lw;
+wire cpu1_instr_maskirq;
+wire cpu1_instr_or;
+wire cpu1_instr_ori;
+wire cpu1_instr_rdcycle;
+wire cpu1_instr_rdcycleh;
+wire cpu1_instr_rdinstr;
+wire cpu1_instr_rdinstrh;
+wire cpu1_instr_retirq;
+wire cpu1_instr_sb;
+wire cpu1_instr_setq;
+wire cpu1_instr_sh;
+wire cpu1_instr_sll;
+wire cpu1_instr_slli;
+wire cpu1_instr_slt;
+wire cpu1_instr_slti;
+wire cpu1_instr_sltiu;
+wire cpu1_instr_sltu;
+wire cpu1_instr_sra;
+wire cpu1_instr_srai;
+wire cpu1_instr_srl;
+wire cpu1_instr_srli;
+wire cpu1_instr_sub;
+wire cpu1_instr_sw;
+wire cpu1_instr_timer;
+wire cpu1_instr_waitirq;
+wire cpu1_instr_xor;
+wire cpu1_instr_xori;
+wire cpu1_is_alu_reg_imm;
+wire cpu1_is_alu_reg_reg;
+wire cpu1_is_beq_bne_blt_bge_bltu_bgeu;
+wire cpu1_is_compare;
+wire cpu1_is_jalr_addi_slti_sltiu_xori_ori_andi;
+wire cpu1_is_lb_lh_lw_lbu_lhu;
+wire cpu1_is_lbu_lhu_lw;
+wire cpu1_is_lui_auipc_jal;
+wire cpu1_is_lui_auipc_jal_jalr_addi_add_sub;
+wire cpu1_is_sb_sh_sw;
+wire cpu1_is_sll_srl_sra;
+wire cpu1_is_slli_srli_srai;
+wire cpu1_is_slti_blt_slt;
+wire cpu1_is_sltiu_bltu_sltu;
+wire cpu1_latched_branch;
+wire cpu1_latched_compr;
+wire cpu1_latched_is_lb;
+wire cpu1_latched_is_lh;
+wire cpu1_latched_is_lu;
+wire [4:0] cpu1_latched_rd;
+wire cpu1_latched_stalu;
+wire cpu1_latched_store;
+wire [31:0] cpu1_mem_addr;
+wire cpu1_mem_do_prefetch;
+wire cpu1_mem_do_rdata;
+wire cpu1_mem_do_rinst;
+wire cpu1_mem_do_wdata;
+wire [31:0] cpu1_mem_rdata_q;
+wire [1:0] cpu1_mem_state;
+wire cpu1_mem_valid;
+wire [31:0] cpu1_mem_wdata;
+wire [1:0] cpu1_mem_wordsize;
+wire [3:0] cpu1_mem_wstrb;
+wire [31:0] cpu1_reg_next_pc;
+wire [31:0] cpu1_reg_op1;
+wire [31:0] cpu1_reg_op2;
+wire [31:0] cpu1_reg_out;
+wire [31:0] cpu1_reg_pc;
+wire [4:0] cpu1_reg_sh;
+wire cpu1_trap;
+wire [1023:0] cpu1_cpuregs;
+
+wire [31:0] cpu2_alu_out_q;
+wire cpu2_compressed_instr;
+wire [63:0] cpu2_count_cycle;
+wire [63:0] cpu2_count_instr;
+wire [7:0] cpu2_cpu_state;
+wire [31:0] cpu2_decoded_imm;
+wire [31:0] cpu2_decoded_imm_j;
+wire [4:0] cpu2_decoded_rd;
+wire [4:0] cpu2_decoded_rs1;
+wire [4:0] cpu2_decoded_rs2;
+wire cpu2_decoder_pseudo_trigger;
+wire cpu2_decoder_trigger;
+wire cpu2_instr_add;
+wire cpu2_instr_addi;
+wire cpu2_instr_and;
+wire cpu2_instr_andi;
+wire cpu2_instr_auipc;
+wire cpu2_instr_beq;
+wire cpu2_instr_bge;
+wire cpu2_instr_bgeu;
+wire cpu2_instr_blt;
+wire cpu2_instr_bltu;
+wire cpu2_instr_bne;
+wire cpu2_instr_getq;
+wire cpu2_instr_jal;
+wire cpu2_instr_jalr;
+wire cpu2_instr_lb;
+wire cpu2_instr_lbu;
+wire cpu2_instr_lh;
+wire cpu2_instr_lhu;
+wire cpu2_instr_lui;
+wire cpu2_instr_lw;
+wire cpu2_instr_maskirq;
+wire cpu2_instr_or;
+wire cpu2_instr_ori;
+wire cpu2_instr_rdcycle;
+wire cpu2_instr_rdcycleh;
+wire cpu2_instr_rdinstr;
+wire cpu2_instr_rdinstrh;
+wire cpu2_instr_retirq;
+wire cpu2_instr_sb;
+wire cpu2_instr_setq;
+wire cpu2_instr_sh;
+wire cpu2_instr_sll;
+wire cpu2_instr_slli;
+wire cpu2_instr_slt;
+wire cpu2_instr_slti;
+wire cpu2_instr_sltiu;
+wire cpu2_instr_sltu;
+wire cpu2_instr_sra;
+wire cpu2_instr_srai;
+wire cpu2_instr_srl;
+wire cpu2_instr_srli;
+wire cpu2_instr_sub;
+wire cpu2_instr_sw;
+wire cpu2_instr_timer;
+wire cpu2_instr_waitirq;
+wire cpu2_instr_xor;
+wire cpu2_instr_xori;
+wire cpu2_is_alu_reg_imm;
+wire cpu2_is_alu_reg_reg;
+wire cpu2_is_beq_bne_blt_bge_bltu_bgeu;
+wire cpu2_is_compare;
+wire cpu2_is_jalr_addi_slti_sltiu_xori_ori_andi;
+wire cpu2_is_lb_lh_lw_lbu_lhu;
+wire cpu2_is_lbu_lhu_lw;
+wire cpu2_is_lui_auipc_jal;
+wire cpu2_is_lui_auipc_jal_jalr_addi_add_sub;
+wire cpu2_is_sb_sh_sw;
+wire cpu2_is_sll_srl_sra;
+wire cpu2_is_slli_srli_srai;
+wire cpu2_is_slti_blt_slt;
+wire cpu2_is_sltiu_bltu_sltu;
+wire cpu2_latched_branch;
+wire cpu2_latched_compr;
+wire cpu2_latched_is_lb;
+wire cpu2_latched_is_lh;
+wire cpu2_latched_is_lu;
+wire [4:0] cpu2_latched_rd;
+wire cpu2_latched_stalu;
+wire cpu2_latched_store;
+wire [31:0] cpu2_mem_addr;
+wire cpu2_mem_do_prefetch;
+wire cpu2_mem_do_rdata;
+wire cpu2_mem_do_rinst;
+wire cpu2_mem_do_wdata;
+wire [31:0] cpu2_mem_rdata_q;
+wire [1:0] cpu2_mem_state;
+wire cpu2_mem_valid;
+wire [31:0] cpu2_mem_wdata;
+wire [1:0] cpu2_mem_wordsize;
+wire [3:0] cpu2_mem_wstrb;
+wire [31:0] cpu2_reg_next_pc;
+wire [31:0] cpu2_reg_op1;
+wire [31:0] cpu2_reg_op2;
+wire [31:0] cpu2_reg_out;
+wire [31:0] cpu2_reg_pc;
+wire [4:0] cpu2_reg_sh;
+wire cpu2_trap;
+wire [1023:0] cpu2_cpuregs;
+
+soc soc1(
+    .clk (clk),
+    .resetn (resetn),
+    .gpio_pin_in (gpio_pin_in),
+    .uart_rx (uart_rx),
+    .spi_miso (spi_miso),
+    .cpu_alu_out_q (cpu1_alu_out_q),
+    .cpu_compressed_instr (cpu1_compressed_instr),
+    .cpu_count_cycle (cpu1_count_cycle),
+    .cpu_count_instr (cpu1_count_instr),
+    .cpu_cpu_state (cpu1_cpu_state),
+    .cpu_decoded_imm (cpu1_decoded_imm),
+    .cpu_decoded_imm_j (cpu1_decoded_imm_j),
+    .cpu_decoded_rd (cpu1_decoded_rd),
+    .cpu_decoded_rs1 (cpu1_decoded_rs1),
+    .cpu_decoded_rs2 (cpu1_decoded_rs2),
+    .cpu_decoder_pseudo_trigger (cpu1_decoder_pseudo_trigger),
+    .cpu_decoder_trigger (cpu1_decoder_trigger),
+    .cpu_instr_add (cpu1_instr_add),
+    .cpu_instr_addi (cpu1_instr_addi),
+    .cpu_instr_and (cpu1_instr_and),
+    .cpu_instr_andi (cpu1_instr_andi),
+    .cpu_instr_auipc (cpu1_instr_auipc),
+    .cpu_instr_beq (cpu1_instr_beq),
+    .cpu_instr_bge (cpu1_instr_bge),
+    .cpu_instr_bgeu (cpu1_instr_bgeu),
+    .cpu_instr_blt (cpu1_instr_blt),
+    .cpu_instr_bltu (cpu1_instr_bltu),
+    .cpu_instr_bne (cpu1_instr_bne),
+    .cpu_instr_getq (cpu1_instr_getq),
+    .cpu_instr_jal (cpu1_instr_jal),
+    .cpu_instr_jalr (cpu1_instr_jalr),
+    .cpu_instr_lb (cpu1_instr_lb),
+    .cpu_instr_lbu (cpu1_instr_lbu),
+    .cpu_instr_lh (cpu1_instr_lh),
+    .cpu_instr_lhu (cpu1_instr_lhu),
+    .cpu_instr_lui (cpu1_instr_lui),
+    .cpu_instr_lw (cpu1_instr_lw),
+    .cpu_instr_maskirq (cpu1_instr_maskirq),
+    .cpu_instr_or (cpu1_instr_or),
+    .cpu_instr_ori (cpu1_instr_ori),
+    .cpu_instr_rdcycle (cpu1_instr_rdcycle),
+    .cpu_instr_rdcycleh (cpu1_instr_rdcycleh),
+    .cpu_instr_rdinstr (cpu1_instr_rdinstr),
+    .cpu_instr_rdinstrh (cpu1_instr_rdinstrh),
+    .cpu_instr_retirq (cpu1_instr_retirq),
+    .cpu_instr_sb (cpu1_instr_sb),
+    .cpu_instr_setq (cpu1_instr_setq),
+    .cpu_instr_sh (cpu1_instr_sh),
+    .cpu_instr_sll (cpu1_instr_sll),
+    .cpu_instr_slli (cpu1_instr_slli),
+    .cpu_instr_slt (cpu1_instr_slt),
+    .cpu_instr_slti (cpu1_instr_slti),
+    .cpu_instr_sltiu (cpu1_instr_sltiu),
+    .cpu_instr_sltu (cpu1_instr_sltu),
+    .cpu_instr_sra (cpu1_instr_sra),
+    .cpu_instr_srai (cpu1_instr_srai),
+    .cpu_instr_srl (cpu1_instr_srl),
+    .cpu_instr_srli (cpu1_instr_srli),
+    .cpu_instr_sub (cpu1_instr_sub),
+    .cpu_instr_sw (cpu1_instr_sw),
+    .cpu_instr_timer (cpu1_instr_timer),
+    .cpu_instr_waitirq (cpu1_instr_waitirq),
+    .cpu_instr_xor (cpu1_instr_xor),
+    .cpu_instr_xori (cpu1_instr_xori),
+    .cpu_is_alu_reg_imm (cpu1_is_alu_reg_imm),
+    .cpu_is_alu_reg_reg (cpu1_is_alu_reg_reg),
+    .cpu_is_beq_bne_blt_bge_bltu_bgeu (cpu1_is_beq_bne_blt_bge_bltu_bgeu),
+    .cpu_is_compare (cpu1_is_compare),
+    .cpu_is_jalr_addi_slti_sltiu_xori_ori_andi (cpu1_is_jalr_addi_slti_sltiu_xori_ori_andi),
+    .cpu_is_lb_lh_lw_lbu_lhu (cpu1_is_lb_lh_lw_lbu_lhu),
+    .cpu_is_lbu_lhu_lw (cpu1_is_lbu_lhu_lw),
+    .cpu_is_lui_auipc_jal (cpu1_is_lui_auipc_jal),
+    .cpu_is_lui_auipc_jal_jalr_addi_add_sub (cpu1_is_lui_auipc_jal_jalr_addi_add_sub),
+    .cpu_is_sb_sh_sw (cpu1_is_sb_sh_sw),
+    .cpu_is_sll_srl_sra (cpu1_is_sll_srl_sra),
+    .cpu_is_slli_srli_srai (cpu1_is_slli_srli_srai),
+    .cpu_is_slti_blt_slt (cpu1_is_slti_blt_slt),
+    .cpu_is_sltiu_bltu_sltu (cpu1_is_sltiu_bltu_sltu),
+    .cpu_latched_branch (cpu1_latched_branch),
+    .cpu_latched_compr (cpu1_latched_compr),
+    .cpu_latched_is_lb (cpu1_latched_is_lb),
+    .cpu_latched_is_lh (cpu1_latched_is_lh),
+    .cpu_latched_is_lu (cpu1_latched_is_lu),
+    .cpu_latched_rd (cpu1_latched_rd),
+    .cpu_latched_stalu (cpu1_latched_stalu),
+    .cpu_latched_store (cpu1_latched_store),
+    .cpu_mem_addr (cpu1_mem_addr),
+    .cpu_mem_do_prefetch (cpu1_mem_do_prefetch),
+    .cpu_mem_do_rdata (cpu1_mem_do_rdata),
+    .cpu_mem_do_rinst (cpu1_mem_do_rinst),
+    .cpu_mem_do_wdata (cpu1_mem_do_wdata),
+    .cpu_mem_rdata_q (cpu1_mem_rdata_q),
+    .cpu_mem_state (cpu1_mem_state),
+    .cpu_mem_valid (cpu1_mem_valid),
+    .cpu_mem_wdata (cpu1_mem_wdata),
+    .cpu_mem_wordsize (cpu1_mem_wordsize),
+    .cpu_mem_wstrb (cpu1_mem_wstrb),
+    .cpu_reg_next_pc (cpu1_reg_next_pc),
+    .cpu_reg_op1 (cpu1_reg_op1),
+    .cpu_reg_op2 (cpu1_reg_op2),
+    .cpu_reg_out (cpu1_reg_out),
+    .cpu_reg_pc (cpu1_reg_pc),
+    .cpu_reg_sh (cpu1_reg_sh),
+    .cpu_trap (cpu1_trap),
+    .cpu_cpuregs (cpu1_cpuregs)
+);
+
+soc soc2(
+    .clk (clk),
+    .resetn (resetn),
+    .gpio_pin_in (gpio_pin_in),
+    .uart_rx (uart_rx),
+    .spi_miso (spi_miso),
+    .cpu_alu_out_q (cpu2_alu_out_q),
+    .cpu_compressed_instr (cpu2_compressed_instr),
+    .cpu_count_cycle (cpu2_count_cycle),
+    .cpu_count_instr (cpu2_count_instr),
+    .cpu_cpu_state (cpu2_cpu_state),
+    .cpu_decoded_imm (cpu2_decoded_imm),
+    .cpu_decoded_imm_j (cpu2_decoded_imm_j),
+    .cpu_decoded_rd (cpu2_decoded_rd),
+    .cpu_decoded_rs1 (cpu2_decoded_rs1),
+    .cpu_decoded_rs2 (cpu2_decoded_rs2),
+    .cpu_decoder_pseudo_trigger (cpu2_decoder_pseudo_trigger),
+    .cpu_decoder_trigger (cpu2_decoder_trigger),
+    .cpu_instr_add (cpu2_instr_add),
+    .cpu_instr_addi (cpu2_instr_addi),
+    .cpu_instr_and (cpu2_instr_and),
+    .cpu_instr_andi (cpu2_instr_andi),
+    .cpu_instr_auipc (cpu2_instr_auipc),
+    .cpu_instr_beq (cpu2_instr_beq),
+    .cpu_instr_bge (cpu2_instr_bge),
+    .cpu_instr_bgeu (cpu2_instr_bgeu),
+    .cpu_instr_blt (cpu2_instr_blt),
+    .cpu_instr_bltu (cpu2_instr_bltu),
+    .cpu_instr_bne (cpu2_instr_bne),
+    .cpu_instr_getq (cpu2_instr_getq),
+    .cpu_instr_jal (cpu2_instr_jal),
+    .cpu_instr_jalr (cpu2_instr_jalr),
+    .cpu_instr_lb (cpu2_instr_lb),
+    .cpu_instr_lbu (cpu2_instr_lbu),
+    .cpu_instr_lh (cpu2_instr_lh),
+    .cpu_instr_lhu (cpu2_instr_lhu),
+    .cpu_instr_lui (cpu2_instr_lui),
+    .cpu_instr_lw (cpu2_instr_lw),
+    .cpu_instr_maskirq (cpu2_instr_maskirq),
+    .cpu_instr_or (cpu2_instr_or),
+    .cpu_instr_ori (cpu2_instr_ori),
+    .cpu_instr_rdcycle (cpu2_instr_rdcycle),
+    .cpu_instr_rdcycleh (cpu2_instr_rdcycleh),
+    .cpu_instr_rdinstr (cpu2_instr_rdinstr),
+    .cpu_instr_rdinstrh (cpu2_instr_rdinstrh),
+    .cpu_instr_retirq (cpu2_instr_retirq),
+    .cpu_instr_sb (cpu2_instr_sb),
+    .cpu_instr_setq (cpu2_instr_setq),
+    .cpu_instr_sh (cpu2_instr_sh),
+    .cpu_instr_sll (cpu2_instr_sll),
+    .cpu_instr_slli (cpu2_instr_slli),
+    .cpu_instr_slt (cpu2_instr_slt),
+    .cpu_instr_slti (cpu2_instr_slti),
+    .cpu_instr_sltiu (cpu2_instr_sltiu),
+    .cpu_instr_sltu (cpu2_instr_sltu),
+    .cpu_instr_sra (cpu2_instr_sra),
+    .cpu_instr_srai (cpu2_instr_srai),
+    .cpu_instr_srl (cpu2_instr_srl),
+    .cpu_instr_srli (cpu2_instr_srli),
+    .cpu_instr_sub (cpu2_instr_sub),
+    .cpu_instr_sw (cpu2_instr_sw),
+    .cpu_instr_timer (cpu2_instr_timer),
+    .cpu_instr_waitirq (cpu2_instr_waitirq),
+    .cpu_instr_xor (cpu2_instr_xor),
+    .cpu_instr_xori (cpu2_instr_xori),
+    .cpu_is_alu_reg_imm (cpu2_is_alu_reg_imm),
+    .cpu_is_alu_reg_reg (cpu2_is_alu_reg_reg),
+    .cpu_is_beq_bne_blt_bge_bltu_bgeu (cpu2_is_beq_bne_blt_bge_bltu_bgeu),
+    .cpu_is_compare (cpu2_is_compare),
+    .cpu_is_jalr_addi_slti_sltiu_xori_ori_andi (cpu2_is_jalr_addi_slti_sltiu_xori_ori_andi),
+    .cpu_is_lb_lh_lw_lbu_lhu (cpu2_is_lb_lh_lw_lbu_lhu),
+    .cpu_is_lbu_lhu_lw (cpu2_is_lbu_lhu_lw),
+    .cpu_is_lui_auipc_jal (cpu2_is_lui_auipc_jal),
+    .cpu_is_lui_auipc_jal_jalr_addi_add_sub (cpu2_is_lui_auipc_jal_jalr_addi_add_sub),
+    .cpu_is_sb_sh_sw (cpu2_is_sb_sh_sw),
+    .cpu_is_sll_srl_sra (cpu2_is_sll_srl_sra),
+    .cpu_is_slli_srli_srai (cpu2_is_slli_srli_srai),
+    .cpu_is_slti_blt_slt (cpu2_is_slti_blt_slt),
+    .cpu_is_sltiu_bltu_sltu (cpu2_is_sltiu_bltu_sltu),
+    .cpu_latched_branch (cpu2_latched_branch),
+    .cpu_latched_compr (cpu2_latched_compr),
+    .cpu_latched_is_lb (cpu2_latched_is_lb),
+    .cpu_latched_is_lh (cpu2_latched_is_lh),
+    .cpu_latched_is_lu (cpu2_latched_is_lu),
+    .cpu_latched_rd (cpu2_latched_rd),
+    .cpu_latched_stalu (cpu2_latched_stalu),
+    .cpu_latched_store (cpu2_latched_store),
+    .cpu_mem_addr (cpu2_mem_addr),
+    .cpu_mem_do_prefetch (cpu2_mem_do_prefetch),
+    .cpu_mem_do_rdata (cpu2_mem_do_rdata),
+    .cpu_mem_do_rinst (cpu2_mem_do_rinst),
+    .cpu_mem_do_wdata (cpu2_mem_do_wdata),
+    .cpu_mem_rdata_q (cpu2_mem_rdata_q),
+    .cpu_mem_state (cpu2_mem_state),
+    .cpu_mem_valid (cpu2_mem_valid),
+    .cpu_mem_wdata (cpu2_mem_wdata),
+    .cpu_mem_wordsize (cpu2_mem_wordsize),
+    .cpu_mem_wstrb (cpu2_mem_wstrb),
+    .cpu_reg_next_pc (cpu2_reg_next_pc),
+    .cpu_reg_op1 (cpu2_reg_op1),
+    .cpu_reg_op2 (cpu2_reg_op2),
+    .cpu_reg_out (cpu2_reg_out),
+    .cpu_reg_pc (cpu2_reg_pc),
+    .cpu_reg_sh (cpu2_reg_sh),
+    .cpu_trap (cpu2_trap),
+    .cpu_cpuregs (cpu2_cpuregs)
+);
+
+// inputs, held constant (easy case)
+initial begin
+    gpio_pin_in = 8'h0;
+    uart_rx = 4'b1111;
+end
+
+// cycle counter
+integer cycle_count;
+initial begin
+    cycle_count = 0;
+end
+always @(posedge clk) begin
+    cycle_count = cycle_count + 1;
+end
+
+// assumptions:
+// reset pulse at start
+initial assume(resetn == 0);
+always @(posedge clk) begin
+    if (cycle_count > 0) begin
+        assume(resetn == 1);
+    end
+end
+
+// assertions
+always @(negedge clk) begin
+    // a cycle_count of `k` corresponds to a "step" in the SBY output of
+    // `k+1`, and the depth needs to be >= `k+2`
+    if (cycle_count == {cycle_count}) begin
+{assertions}
+    end
+end
+
+endmodule

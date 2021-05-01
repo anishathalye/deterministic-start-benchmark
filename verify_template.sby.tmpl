@@ -1,0 +1,34 @@
+[options]
+mode bmc
+skip {skip}
+depth {depth}
+
+[engines]
+smtbmc --nopresat --progress z3
+
+[script]
+read_verilog -sv {sv_filename}
+read_verilog gpio.v
+read_verilog picorv32.v
+read_verilog ram.v
+read_verilog rom.v
+read_verilog simpleuart.v
+read_verilog soc.v
+read_verilog SPI_Master.v
+read_verilog spi.v
+read_verilog uart.v
+prep -top verify
+
+[files]
+{sv_filename}
+rom.mem hw/firmware.mem
+hw/firmware.mem
+hw/gpio.v
+hw/picorv32.v
+hw/ram.v
+hw/rom.v
+hw/simpleuart.v
+hw/soc.v
+hw/SPI_Master.v
+hw/spi.v
+hw/uart.v

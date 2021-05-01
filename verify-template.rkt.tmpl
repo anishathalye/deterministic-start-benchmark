@@ -1,0 +1,43 @@
+#lang racket/base
+
+(require "soc.rkt"
+         racket/match
+         (prefix-in @ (combine-in rosette rosutil))
+         yosys shiva)
+
+;; example:
+#;(define getters
+  (list
+   (cons 'cpu.instr_lw (lambda (s) (get-field s 'cpu.instr_lw)))
+   (cons '|cpu.cpuregs[3]| (lambda (s) (vector-ref (get-field s 'cpu.cpuregs) 3)))))
+
+(define getters
+  {getters})
+
+;; example:
+#;(define verify-cycles 10)
+
+(define verify-cycles {verify-cycles})
+
+(@gc-terms!)
+
+(overapproximate-symbolic-load-threshold 64)
+(overapproximate-symbolic-store-threshold 64)
+
+(define inputs-default
+  `((gpio_pin_in . ,(@bv 0 8))
+    (uart_rx . ,(@bv #xf 4))))
+
+(define cycles
+  (verify-deterministic-start
+   new-symbolic-soc_s
+   #:invariant soc_i
+   #:step soc_t
+   #:reset 'resetn
+   #:reset-active 'low
+   #:inputs inputs-default
+   #:state-getters getters
+   #:try-verify-after verify-cycles
+   #:limit verify-cycles))
+
+(exit (if cycles 0 1))

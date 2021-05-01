@@ -1,0 +1,17 @@
+.vagrant/
+*.log
+compiled/
+soc.rkt
+*.smt2
+*.mem
+*.elf
+*.bin
+*.lst
+*.o
+verify_oracle/
+verify_twocpu/
+verify-cycles-*.rkt
+verify_cycles_*.sby
+verify_cycles_*.sv
+bench-*.txt
+verify_cycles_*/

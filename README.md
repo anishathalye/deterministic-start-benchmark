@@ -11,7 +11,7 @@ the [Notary paper][sosp-paper] or the [Notary GitHub repo][notary-github] for
 more details on deterministic start.
 
 <p align="center">
-<img width="646" height="503" src="plot.png" alt="Scalability plot: rtl outperforms SymbiYosys">
+<img src="plot.png" alt="Scalability plot: rtl outperforms SymbiYosys">
 </p>
 
 For this verification task, SymbiYosys does not scale well. This is because of

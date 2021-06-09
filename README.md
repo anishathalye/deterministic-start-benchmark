@@ -1,6 +1,6 @@
-# Deterministic start benchmark: SymbiYosys versus rtl
+# Deterministic start benchmark: SymbiYosys versus rtlv
 
-This repository contains code to benchmark [SymbiYosys] versus [rtl] for
+This repository contains code to benchmark [SymbiYosys] versus [rtlv] for
 formally verifying a property that requires reasoning about a circuit's
 execution over a large number of cycles.
 
@@ -11,27 +11,27 @@ the [Notary paper][sosp-paper] or the [Notary GitHub repo][notary-github] for
 more details on deterministic start.
 
 <p align="center">
-<img src="plot.png" alt="Scalability plot: rtl outperforms SymbiYosys">
+<img src="plot.png" alt="Scalability plot: rtlv outperforms SymbiYosys">
 </p>
 
 For this verification task, SymbiYosys does not scale well. This is because of
 the encoding that SymbiYosys uses: it effectively requires the SMT solver to
 reason about the circuit's execution, even when most of the values in the
-circuit can be shown to be concrete values. On the other hand, rtl uses
+circuit can be shown to be concrete values. On the other hand, rtlv uses
 symbolic execution, using [Rosette] plus some extra tricks to obtain much
 better performance when running over many cycles, because most of the
 computation happens concretely in Racket/Rosette.
 
 [SymbiYosys]: https://symbiyosys.readthedocs.io/
-[rtl]: https://github.com/anishathalye/rtl
+[rtlv]: https://github.com/anishathalye/rtlv
 [sosp-paper]: https://pdos.csail.mit.edu/papers/notary:sosp19.pdf
 [notary-github]: https://github.com/anishathalye/notary
 
 ## Encoding the property
 
-### rtl
+### rtlv
 
-rtl uses the `rtl/shiva` library to prove deterministic start. This
+rtlv uses the `rtlv/shiva` library to prove deterministic start. This
 special-purpose tool does symbolic execution and makes use of intermediate
 solver queries to build up a final solver query.
 
@@ -50,7 +50,7 @@ files (see below) and examine a particular file, e.g. `verify_cycles_104.sv`.
 
 ## Scalability
 
-Our goal is to benchmark SymbiYosys versus rtl for proving a property that
+Our goal is to benchmark SymbiYosys versus rtlv for proving a property that
 requires reasoning over many cycles of execution. To derive a scalability plot,
 we use the tools to check a property like deterministic start for a subset of
 the state (such that it could hold over a smaller number of cycles). In other
@@ -61,7 +61,7 @@ the number of cycles of circuit execution.
 To determine in the first place which subset of state is cleared after a
 particular number of cycles, which is required to produce the SymbiYosys code
 (that asserts that certain registers are equal after a certain number of
-cycles), we "cheat" and use a script based on `rtl/shiva`.
+cycles), we "cheat" and use a script based on `rtlv/shiva`.
 
 ## Use
 
@@ -78,7 +78,7 @@ produce files `bench-{symbiyosys,racket}.txt` that contain timing measurements.
 - [SymbiYosys]
 - [Racket]
     - [Rosette]
-    - [rtl]
+    - [rtlv]
 
 [Rosette]: https://github.com/emina/rosette
 [bin2coe]: https://github.com/anishathalye/bin2coe

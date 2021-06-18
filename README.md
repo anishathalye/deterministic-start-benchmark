@@ -2,7 +2,8 @@
 
 This repository contains code to benchmark [SymbiYosys] versus [rtlv] for
 formally verifying a property that requires reasoning about a circuit's
-execution over a large number of cycles.
+execution over a large number of cycles. See the [rtlv paper][rtlv-paper] for
+more information.
 
 The property that we benchmark is called "deterministic start". At a high
 level, a SoC satisfies deterministic start if it clears all of its internal
@@ -22,6 +23,7 @@ symbolic execution, using [Rosette] plus some extra tricks to obtain much
 better performance when running over many cycles, because most of the
 computation happens concretely in Racket/Rosette.
 
+[rtlv-paper]: https://pdos.csail.mit.edu/papers/rtlv:carrv21.pdf
 [SymbiYosys]: https://symbiyosys.readthedocs.io/
 [rtlv]: https://github.com/anishathalye/rtlv
 [sosp-paper]: https://pdos.csail.mit.edu/papers/notary:sosp19.pdf
